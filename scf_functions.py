@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import numpy as np
 from scipy.special import erf
+from scipy.linalg import fractional_matrix_power
 
 def shift_distances(coords):
     """
@@ -95,23 +96,23 @@ def orthogonalize(S, min_tol=1e-7, canonical=False):
     eig, U = np.linalg.eig(S)
     U = np.flipud(U)
     s = np.matmul(np.matmul(U.transpose(), S), U)
-    np.fill_diagonal(s, s.diagonal()**(-0.5))
+    s = fractional_matrix_power(s, -0.5)
     if eig.min() > min_tol and not canonical:
         return symmetric_orthogonalization(U, s)
     else:
         return canonical_orthogonalization(U, s)
 
-def density_matrix(C, num_elecs):
+def density_matrix(C, n_elec):
     """
     Computes the density matrix from
     coefficient matrix
     """
-    P = np.zeros_like(C)
-    for e in range(int(num_elecs/2)):
+    P = np.zeros((n_elec, n_elec))
+    for e in range(int(n_elec/2)):
         for i in range(C.shape[0]):
             for j in range(C.shape[0]):
-                P[i, j] += 2.0 * C[i, e] * C[j, e]
-    return P
+                P[i, j] += C[i, e] * C[j, e]
+    return 2.0*P
 
 def g_matrix(P, twoelec):
     """
@@ -146,17 +147,34 @@ def get_nuclear(distances, charge):
             nuclear += charge[i]*charge[j]/distances[j]
     return nuclear
 
+def test_convergence(E, E_old, E_conv, P, P_old, P_conv):
+    P_change = 0
+    for i in range(P.shape[0]):
+        for j in range(P.shape[0]):
+            P_change += (P[i,j] - P_old[i,j])**2
+    P_change = np.sqrt(P_change/P.shape[0]**2)
+    if (np.abs(E - E_old) < E_conv) and (P_change < P_conv):
+        return True
+    else:
+        return False
+
 class Basis_Function:
     """
     class to store basis function info, currently works with
     STO-3G
     """
-    def __init__(self, basis_def):
-        self.num_priv = len(basis_def)
+    def __init__(self, basis_def, center):
         self.coeff = []
         self.alpha = []
+        self.center = center
 
-        for i in basis_def:
-            self.coeff.append(i[0])
-            self.alpha.append(i[1])
+        if isinstance(basis_def[0], list):
+            self.num_priv = len(basis_def)
+            for i in basis_def:
+                self.coeff.append(i[0])
+                self.alpha.append(i[1])
+        else:
+            self.num_priv = 1
+            self.coeff.append(basis_def[0])
+            self.alpha.append(basis_def[1])
 

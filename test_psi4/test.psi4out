@@ -1,0 +1,98 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.4a2.dev552 
+
+                         Git: Rev {master} 1295e77 
+
+
+    R. M. Parrish, L. A. Burns, D. G. A. Smith, A. C. Simmonett,
+    A. E. DePrince III, E. G. Hohenstein, U. Bozkaya, A. Yu. Sokolov,
+    R. Di Remigio, R. M. Richard, J. F. Gonthier, A. M. James,
+    H. R. McAlexander, A. Kumar, M. Saitow, X. Wang, B. P. Pritchard,
+    P. Verma, H. F. Schaefer III, K. Patkowski, R. A. King, E. F. Valeev,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, and C. D. Sherrill,
+    J. Chem. Theory Comput. 13(7) pp 3185--3197 (2017).
+    (doi: 10.1021/acs.jctc.7b00174)
+
+
+                         Additional Contributions by
+    P. Kraus, H. Kruse, M. H. Lechner, M. C. Schieber, R. A. Shaw,
+    A. Alenaizan, R. Galvelis, Z. L. Glick, S. Lehtola, and J. P. Misiewicz
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Sunday, 31 January 2021 09:12PM
+
+    Process ID: 25592
+    Host:       chem-mcdaniel-u01
+    PSIDATADIR: /usr/local/psi4/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input File <==
+
+--------------------------------------------------------------------------
+
+molecule {
+  0 1
+   He    0.0   0.0   0.0
+   H    1.4632   0.0   0.0
+  units bohr
+}
+
+set {
+    basis         6-31g
+    guess         core
+    scf_type      pk
+}
+
+energy('scf')
+--------------------------------------------------------------------------
+
+Traceback (most recent call last):
+  File "/usr/local/psi4/bin/psi4", line 331, in <module>
+    exec(content)
+  File "<string>", line 19, in <module>
+  File "/usr/local/psi4/lib/psi4/driver/molutil.py", line 249, in geometry
+    molrec = qcel.molparse.from_string(
+  File "/home/jstoppelman3/anaconda3/envs/test_psi/lib/python3.8/site-packages/qcelemental/molparse/from_string.py", line 261, in from_string
+    molrec = from_input_arrays(
+  File "/home/jstoppelman3/anaconda3/envs/test_psi/lib/python3.8/site-packages/qcelemental/molparse/from_arrays.py", line 97, in from_input_arrays
+    processed = from_arrays(
+  File "/home/jstoppelman3/anaconda3/envs/test_psi/lib/python3.8/site-packages/qcelemental/molparse/from_arrays.py", line 379, in from_arrays
+    processed = validate_and_fill_chgmult(
+  File "/home/jstoppelman3/anaconda3/envs/test_psi/lib/python3.8/site-packages/qcelemental/molparse/chgmult.py", line 501, in validate_and_fill_chgmult
+    c_final, fc_final, m_final, fm_final = reconcile(cgmp_exact_c, cgmp_exact_fc, cgmp_exact_m, cgmp_exact_fm)
+  File "/home/jstoppelman3/anaconda3/envs/test_psi/lib/python3.8/site-packages/qcelemental/molparse/chgmult.py", line 491, in reconcile
+    raise ValidationError(err)
+
+qcelemental.exceptions.ValidationError: Inconsistent or unspecified chg/mult: sys chg: None, frag chg: [0.0], sys mult: None, frag mult: [1]
+
+
+Printing out the relevant lines from the Psithon --> Python processed input file:
+    0 1
+    H 0 0 0
+    H 0.74 0 0
+    ""","blank_molecule_psi4_yo")
+    
+--> geometry("""
+      0 1
+       He    0.0   0.0   0.0
+       H    1.4632   0.0   0.0
+      units bohr
+    """)
+
+!----------------------------------------------------------------------------------!
+!                                                                                  !
+!  Inconsistent or unspecified chg/mult: sys chg: None, frag chg: [0.0], sys mult: !
+! None, frag mult: [1]                                                             !
+!                                                                                  !
+!----------------------------------------------------------------------------------!
+
+    Psi4 stopped on: Sunday, 31 January 2021 09:12PM
+    Psi4 wall time for execution: 0:00:00.02
+
+*** Psi4 encountered an error. Buy a developer more coffee!
+*** Resources and help at github.com/psi4/psi4.
