@@ -1543,7 +1543,7 @@ class ERI:
                             self.ERI[i, j, k, l] = self.ERI[k, l, i, j] = self.ERI[j, i, l, k] = self.ERI[l, k, j, i] \
                                     = self.ERI[j, i, k, l] = self.ERI[l, k, i, j] = self.ERI[i, j, l, k] = self.ERI[k, l, j, i] = integrals[index]
                             index += 1
-       
+        
         if self.basis.spherical:
             #Transform all axes from cartesian to spherical using einsum
             c2sph = self.basis.c2sph

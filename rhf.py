@@ -4,29 +4,38 @@ class RHF:
     """
     Perform Restricted Hartree-Fock calculation
     """
-    def __init__(self, overlap, kinetic, potential, eri, nuclear_repulsion, basis, maxiter=50, E_conv=1e-8, D_conv=1e-4):
-    """
-    Parameters
-    -----------
-    overlap: object
-        Object for computing overlap integral
-    kinetic: object
-        Object for computing kinetic energy integral
-    potential: object
-        Object for computing nuclear-electron attraction
-    eri: object
-        Object for computing ERI
-    nuclear_repulsion: object
-        Object for computing nuclear-nuclear attractions
-    basis: object
-        Wrapper around Psi4 for reading basis data
-    maxiter: int
-        Number of SCF iterations
-    E_conv: float
-        SCF energy tolerance
-    D_conv: float
-        Convergence for density matrix
-    """
+    def __init__(self, overlap, 
+            kinetic, 
+            potential, 
+            eri, 
+            nuclear_repulsion, 
+            basis, 
+            maxiter=50, 
+            E_conv=1e-8, 
+            D_conv=1e-4):
+
+        """
+        Parameters
+        -----------
+        overlap: object
+            Object for computing overlap integral
+        kinetic: object
+            Object for computing kinetic energy integral
+        potential: object
+            Object for computing nuclear-electron attraction
+        eri: object
+            Object for computing ERI
+        nuclear_repulsion: object
+            Object for computing nuclear-nuclear attractions
+        basis: object
+            Wrapper around Psi4 for reading basis data
+        maxiter: int
+            Number of SCF iterations
+        E_conv: float
+            SCF energy tolerance
+        D_conv: float
+            Convergence for density matrix
+        """
         self.overlap = overlap
         self.kinetic = kinetic
         self.potential = potential
@@ -73,14 +82,22 @@ class RHF:
         E_old = 0
         F_list = []
         DIIS_error = []
-
+        
         for i in range(1, self.maxiter+1):
+            
+            #term = 0
+            #for k in range(self.I.shape[0]):
+            #    for l in range(self.I.shape[0]):
+            #        P_test = 0
+            #        for a in range(2):
+            #            P_test += C[k, a] * C[l, a]
+            #        term += P_test * self.I[4, 3, k, l]
 
             J = np.einsum('ijkl, kl->ij', self.I, P)
             K = np.einsum('ikjl, kl->ij', self.I, P)
 
             F = self.H_core + 2.0 * J - K
-
+            
             diis_e = np.einsum('ij,jk,kl->il', F, P, self.S) - np.einsum('ij,jk,kl->il', self.S, P, F)
             diis_e = X.T @ diis_e @ X
             F_list.append(F)
@@ -141,6 +158,30 @@ class RHF:
         self.C = C
         self.P_alpha = P
         self.C_occ = occ
+        J = np.einsum('ijkl, kl->ij', self.I, P)
+        K = np.einsum('ikjl, kl->ij', self.I, P)
+        
+        """
+        eri_test = np.zeros_like(self.I)
+        for a in range(self.I.shape[0]):
+            for j in range(self.I.shape[0]):
+                for k in range(self.I.shape[0]):
+                    for l in range(self.I.shape[0]):
+                        #P_2 = 0
+                        #for a in range(C.shape[1]):
+                        #    P_2 += C[j, a]
+                        #P_3 = 0
+                        #for a in range(C.shape[1]):
+                        #    P_3 += C[k, a]
+                        #P_4 = 0
+                        #for a in range(C.shape[1]):
+                        #    P_4 += C[l, a]
+                        #eri_test[i, j, k, l] += P_1 * P_2 * P_3 * P_4 * self.I[i, j, k, l]
+                        sum_val = 0.0
+                        for i in range(self.I.shape[0]):
+                            sum_val += C[i, a] * self.I[i, j, k, l]
+                        eri_test[a, j, k, l] = sum_val
+        """
 
         return E
 
@@ -153,6 +194,7 @@ class RHF:
         grad_V = np.zeros((3, self.basis.pos.shape[0], self.basis.num_func, self.basis.num_func))
         grad_ERI = np.zeros((3, self.basis.pos.shape[0], self.basis.num_func, self.basis.num_func, self.basis.num_func, \
                 self.basis.num_func))
+        grad_ERI_test = np.load("grad_ERI.npy")
         grad_nuclear = np.zeros((3, self.basis.pos.shape[0]))
         for atom in range(self.basis.pos.shape[0]):
             for cart in range(3):
@@ -177,11 +219,29 @@ class RHF:
 
         grad_Hcore = grad_T + grad_V
         grad_Hcore = 2.0 * np.einsum('ijuv, uv->ij', grad_Hcore, self.P_alpha)
-
+        np.save("grad_ERI.npy", grad_ERI)
+        
         grad_J = 2.0 * np.einsum('ijuvls, ls->ijuv', grad_ERI, self.P_alpha)
         grad_K = 2.0 * np.einsum('ijulvs, ls->ijuv', grad_ERI, self.P_alpha)
 
         grad_TEI = 2.0 * grad_J - grad_K
+       
+        C1_dr = np.load("C1_H4.npy")
+        C1_dr[:, :, :, 1] *= -1
+        C1_dr = C1_dr[0, 0]
+        P_alpha_dr = np.einsum('ij,jk->ik', C1_dr, self.C[:, :self.C_occ].T)
+        P_alpha_dr += np.einsum('ij,jk->ik', self.C[:, :self.C_occ], C1_dr.T)
+        
+        F = self.T + self.V + 2.0 * np.einsum('ijkl,kl->ij', self.I, self.P_alpha) - np.einsum('ikjl,kl->ij', self.I, self.P_alpha)
+
+        F_dr = grad_T[0, 0] + grad_V[0, 0]
+
+        F_dr += 2.0 * np.einsum('uvls, ls->uv', grad_ERI[0, 0], self.P_alpha)
+        F_dr += 2.0 * np.einsum('ijkl,kl->ij', self.I, P_alpha_dr)
+
+        F_dr -= np.einsum('ulvs, ls->uv', grad_ERI[0, 0], self.P_alpha)
+        F_dr -= np.einsum('ikjl, kl->ij', self.I, P_alpha_dr)
+
         grad_TEI = 0.5 * np.einsum('ijuv, uv->ij', grad_TEI, self.P_alpha)
 
         W = np.einsum('i,ui,vi->uv', self.orbital_e[:self.C_occ], self.C[:, :self.C_occ], self.C[:, :self.C_occ])
