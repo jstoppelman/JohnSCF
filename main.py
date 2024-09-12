@@ -8,6 +8,7 @@ from potential import Potential
 from eri import ERI
 from nuclear_repulsion import NuclearRepulsion
 from rhf import RHF
+from cphf import CPHF
 from scf_functions import *
 import sys
 import argparse
@@ -29,7 +30,7 @@ def main():
     elems = atoms.get_chemical_symbols()
 
     #Handle basis set information
-    basis = Basis(atoms, 'sto-3g', spherical)
+    basis = Basis(atoms, '3-21g', spherical)
 
     #Determines the number of electrons in the molecule
     total_charge = basis.get_total_charge()
@@ -51,9 +52,11 @@ def main():
     energy = rhf.calculate_energy()
 
     gradient = rhf.calculate_gradient()
-    print(gradient)
 
     print(f"Final energy = {energy} Eh")
+
+    cphf = CPHF(overlap, kinetic, potential, eri, nuclear_repulsion, rhf, basis)
+    C1 = cphf.calculate()
 
 if __name__ == "__main__":
     main()
